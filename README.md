@@ -1,4 +1,4 @@
-Trivial Drive
+Bazinama Trivial Drive
 ============
 
 Sample for In-App Billing version 3

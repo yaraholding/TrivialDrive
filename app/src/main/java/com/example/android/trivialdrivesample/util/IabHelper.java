@@ -30,7 +30,7 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.android.vending.billing.IInAppBillingService;
+import com.yaramobile.vending.billing.IInAppBillingService;
 
 import org.json.JSONException;
 
@@ -293,8 +293,9 @@ public class IabHelper {
             }
         };
 
-        Intent serviceIntent = new Intent("com.android.vending.billing.InAppBillingService.BIND");
-        serviceIntent.setPackage("com.android.vending");
+        // change intent action name and package name with com.yaramobile.gamecenter
+        Intent serviceIntent = new Intent("com.yaramobile.bazinamastore.billing.InAppBillingService.BIND");
+        serviceIntent.setPackage("com.yaramobile.bazinamastore");
         List<ResolveInfo> intentServices = mContext.getPackageManager().queryIntentServices(serviceIntent, 0);
         if (intentServices != null && !intentServices.isEmpty()) {
             // service available to handle that Intent
