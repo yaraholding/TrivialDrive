@@ -6,8 +6,8 @@ Sample for In-App Billing version 3
 Introduction
 ------------
 
-This sample is provided to demonstrate Google Play In-app Billing. To read
-more visit https://developer.android.com/google/play/billing/index.html
+This sample is provided to demonstrate Bazinama plus In-app Billing. To read
+more visit https://bazinamaplus.ir/billing/index.html
 
 This game is a simple "driving" game where the player can buy gas
 and drive. The car has a tank which stores gas. When the player purchases
@@ -24,7 +24,7 @@ subscription can either be purchased monthly or yearly.
 Pre-requisites
 --------------
 
-- [Documentation](https://developer.android.com/google/play/billing/billing_overview.html)
+- [Documentation](https://bazinamaplus.ir/billing/billing_overview.html)
 
 Screenshots
 -----------
@@ -37,10 +37,10 @@ This sample can't be run as-is. You have to create your own
 application instance in the Developer Console and modify this
 sample to point to it. Here is what you must do:
 
-ON THE GOOGLE PLAY DEVELOPER CONSOLE
+ON THE BAZINAMA PLUS DEVELOPER CONSOLE
 
 1. Create an application on the Developer Console, available at
-   https://play.google.com/apps/publish/.
+   https://dev.bazinamaplus.ir/apps/publish/.
 
 2. Copy the application's public key (a base-64 string). You can find this in
    the "Services & APIs" section under "Licensing & In-App Billing".
@@ -56,9 +56,9 @@ IN THE CODE
 
 5. Export an APK, signing it with your PRODUCTION (not debug) developer certificate.
 
-BACK TO THE GOOGLE PLAY DEVELOPER CONSOLE
+BACK TO THE BAZINAMA PLUS DEVELOPER CONSOLE
 
-6. Upload your APK to Google Play for Alpha Testing.
+6. Upload your APK to BAZINAMA PLUS for Alpha Testing.
 
 7. Make sure to add your test account (the one you will use to test purchases)
    to the "testers" section of your app. Your test account CANNOT BE THE SAME AS
@@ -74,8 +74,8 @@ BACK TO THE GOOGLE PLAY DEVELOPER CONSOLE
    infinite_gas_monthly and yearly for infinite_gas_yearly. To prevent being charged
    while testing, set the trial period to 7 days.
 
-10. Publish your APK to the Alpha channel. Wait 2-3 hours for Google Play to process the APK
-   If you don't wait for Google Play to process the APK, you might see errors where Google Play
+10. Publish your APK to the Alpha channel. Wait 2-3 hours for BAZINAMA PLUS to process the APK
+   If you don't wait for BAZINAMA PLUS to process the APK, you might see errors where BAZINAMA PLUS
    says that "this version of the application is not enabled for in-app billing" or something
    similar. Ensure that the In-App products move to the "Active" state within the console before
    testing.
@@ -89,7 +89,7 @@ test device [*].
 
 Remember to refund any real purchases you make, if you don't want the
 charges to actually to through. Remember, you can use the tester functionality within
-the Google Play console to define test Google Accounts that won't be charged.
+the BAZINAMA PLUS console to define test BAZINAMA PLUS Accounts that won't be charged.
 When using the tester functionality make sure to look for "Test" language appended
 to each receipt. If you don't see "Test" then you will need to be sure to refund/cancel
 the charge.
@@ -107,7 +107,7 @@ how to enforce a tight security model. When releasing a production application
 to the general public, we highly recommend that you implement the security best
 practices described in our documentation at:
 
-http://developer.android.com/google/play/billing/billing_best_practices.html
+http://bazinamaplus.ir/play/billing/billing_best_practices.html
 
 In particular, you should set developer payload strings when making purchase
 requests and you should verify them when reading back the results. This will make
@@ -116,14 +116,14 @@ it more difficult for a malicious party to perform a replay attack on your app.
 Support
 -------
 If you've found an error in this sample, please file an issue:
-https://github.com/googlesamples/android-play-billing/issues
+https://github.com/YaraGithub/TrivialDrive/issues
 
 Patches are encouraged, and may be submitted by forking this project and
 submitting a pull request through GitHub.
 
 License
 -------
-Copyright 2012 Google, Inc.
+Copyright 2012 yara mobile, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one or more contributor
 license agreements.  See the NOTICE file distributed with this work for
