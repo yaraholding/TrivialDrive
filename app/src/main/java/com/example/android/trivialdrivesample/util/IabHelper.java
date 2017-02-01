@@ -30,7 +30,7 @@ import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.yaramobile.vending.billing.IInAppBillingService;
+import com.android.vending.billing.IInAppBillingService;
 
 import org.json.JSONException;
 

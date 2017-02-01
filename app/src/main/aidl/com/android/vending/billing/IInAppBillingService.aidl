@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yaramobile.vending.billing;
+package com.android.vending.billing;
 
 import android.os.Bundle;
 
