@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -43,35 +44,35 @@ import java.util.List;
 
 /**
  * Example game using in-app billing version 3.
- *
+ * <p>
  * Before attempting to run this sample, please read the README file. It
  * contains important information on how to set up this project.
- *
+ * <p>
  * All the game-specific logic is implemented here in MainActivity, while the
  * general-purpose boilerplate that can be reused in any app is provided in the
  * classes in the util/ subdirectory. When implementing your own application,
  * you can copy over util/*.java to make use of those utility classes.
- *
+ * <p>
  * This game is a simple "driving" game where the player can buy gas
  * and drive. The car has a tank which stores gas. When the player purchases
  * gas, the tank fills up (1/4 tank at a time). When the player drives, the gas
  * in the tank diminishes (also 1/4 tank at a time).
- *
+ * <p>
  * The user can also purchase a "premium upgrade" that gives them a red car
  * instead of the standard blue one (exciting!).
- *
+ * <p>
  * The user can also purchase a subscription ("infinite gas") that allows them
  * to drive without using up any gas while that subscription is active.
- *
+ * <p>
  * It's important to note the consumption mechanics for each item.
- *
+ * <p>
  * PREMIUM: the item is purchased and NEVER consumed. So, after the original
  * purchase, the player will always own that item. The application knows to
  * display the red car instead of the blue one because it queries whether
  * the premium "item" is owned or not.
- *
+ * <p>
  * INFINITE GAS: this is a subscription, and subscriptions can't be consumed.
- *
+ * <p>
  * GAS: when gas is purchased, the "gas" item is then owned. We consume it
  * when we apply that item's effects to our app's world, which to us means
  * filling up 1/4 of the tank. This happens immediately after purchase!
@@ -79,12 +80,12 @@ import java.util.List;
  * item is CONSUMED. Consumption should always happen when your game
  * world was safely updated to apply the effect of the purchase. So,
  * in an example scenario:
- *
+ * <p>
  * BEFORE:      tank at 1/2
  * ON PURCHASE: tank at 1/2, "gas" item is owned
  * IMMEDIATELY: "gas" is consumed, tank goes to 3/4
  * AFTER:       tank at 3/4, "gas" item NOT owned any more
- *
+ * <p>
  * Another important point to notice is that it may so happen that
  * the application crashed (or anything else happened) after the user
  * purchased the "gas" item, but before it was consumed. That's why,
@@ -126,8 +127,8 @@ public class MainActivity extends Activity implements IabBroadcastListener,
     static final int RC_REQUEST = 10001;
 
     // Graphics for the gas gauge
-    static int[] TANK_RES_IDS = { R.drawable.gas0, R.drawable.gas1, R.drawable.gas2,
-            R.drawable.gas3, R.drawable.gas4 };
+    static int[] TANK_RES_IDS = {R.drawable.gas0, R.drawable.gas1, R.drawable.gas2,
+            R.drawable.gas3, R.drawable.gas4};
 
     // How many units (1/4 tank is our unit) fill in the tank.
     static final int TANK_MAX = 4;
@@ -161,16 +162,17 @@ public class MainActivity extends Activity implements IabBroadcastListener,
          * want to make it easy for an attacker to replace the public key with one
          * of their own and then fake messages from the server.
          */
-        String base64EncodedPublicKey = "CONSTRUCT_YOUR_KEY_AND_PLACE_IT_HERE";
+//      String base64EncodedPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDV5ywDhukqgW5hUyjA1Y91A/xWii8Dn1pxOYK2qB8lOfjiFP3wjysEqoN9atXO8zzYrWtb/+YurKb+K0M7fUa00m72dB8+lESMUiSAHHMMFAiT35KuAixIusQzeFKL+qvcVZzagMb2JXLOX/mCsvwp9ccRcmSAikkKZQlmgRIv/wIDAQAB";
+        String base64EncodedPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDTcEfJMZzM8+LZ9biA72XBVBA4TQziLx8HWUX1tukXOTq/iqEr3MSC6C68y23fR2efwmkovsg8T8DSCLacByusp2RsmFzuiW/Z7ghPxYr27+LZURRKqpes8zReq+b0A9a7ItifGaAuBKudB7886JqDe1k0H8OZuQJSNSBGNz36jwIDAQAB";
 
         // Some sanity checks to see if the developer (that's you!) really followed the
         // instructions to run this sample (don't put these checks on your app!)
-        if (base64EncodedPublicKey.contains("CONSTRUCT_YOUR")) {
+        /*if (base64EncodedPublicKey.contains("CONSTRUCT_YOUR")) {
             throw new RuntimeException("Please put your app's public key in MainActivity.java. See README.");
         }
         if (getPackageName().startsWith("com.example")) {
             throw new RuntimeException("Please change the sample's package name! See README.");
-        }
+        }*/
 
         // Create the helper, passing it our context and the public key to verify signatures with
         Log.d(TAG, "Creating IAB helper.");
@@ -269,6 +271,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
             // Check for gas delivery -- if we own gas, we should fill up the tank immediately
             Purchase gasPurchase = inventory.getPurchase(SKU_GAS);
             if (gasPurchase != null && verifyDeveloperPayload(gasPurchase)) {
+                // It seems you have some items in the inventory objects even about subscription items
                 Log.d(TAG, "We have gas. Consuming it.");
                 try {
                     mHelper.consumeAsync(inventory.getPurchase(SKU_GAS), mConsumeFinishedListener);
@@ -317,7 +320,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         /* TODO: for security, generate your payload here for verification. See the comments on
          *        verifyDeveloperPayload() for more info. Since this is a SAMPLE, we just use
          *        an empty string, but on a production app you should carefully generate this. */
-        String payload = "";
+        String payload = getPayloadString();
 
         try {
             mHelper.launchPurchaseFlow(this, SKU_GAS, RC_REQUEST,
@@ -328,6 +331,11 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         }
     }
 
+    @NonNull
+    private String getPayloadString() {
+        return "Sample New Developer Payload at : "+ System.nanoTime();
+    }
+
     // User clicked the "Upgrade to Premium" button.
     public void onUpgradeAppButtonClicked(View arg0) {
         Log.d(TAG, "Upgrade button clicked; launching purchase flow for upgrade.");
@@ -336,7 +344,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         /* TODO: for security, generate your payload here for verification. See the comments on
          *        verifyDeveloperPayload() for more info. Since this is a SAMPLE, we just use
          *        an empty string, but on a production app you should carefully generate this. */
-        String payload = "";
+        String payload = getPayloadString();
 
         try {
             mHelper.launchPurchaseFlow(this, SKU_PREMIUM, RC_REQUEST,
@@ -407,7 +415,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
              *        verifyDeveloperPayload() for more info. Since this is a SAMPLE, we just use
              *        an empty string, but on a production app you should carefully generate
              *        this. */
-            String payload = "";
+            String payload = getPayloadString();
 
             if (TextUtils.isEmpty(mSelectedSubscriptionPeriod)) {
                 // The user has not changed from the default selection
@@ -453,16 +461,17 @@ public class MainActivity extends Activity implements IabBroadcastListener,
             // perform any handling of activity results not related to in-app
             // billing...
             super.onActivityResult(requestCode, resultCode, data);
-        }
-        else {
+        } else {
             Log.d(TAG, "onActivityResult handled by IABUtil.");
         }
     }
 
-    /** Verifies the developer payload of a purchase. */
+    /**
+     * Verifies the developer payload of a purchase.
+     */
     boolean verifyDeveloperPayload(Purchase p) {
         String payload = p.getDeveloperPayload();
-
+        Log.d(TAG, "verifyDeveloperPayload: >>>>>> payload : "+payload);
         /*
          * TODO: verify that the developer payload of the purchase is correct. It will be
          * the same one that you sent when initiating the purchase.
@@ -509,10 +518,9 @@ public class MainActivity extends Activity implements IabBroadcastListener,
             }
 
             Log.d(TAG, "Purchase successful.");
-
             if (purchase.getSku().equals(SKU_GAS)) {
                 // bought 1/4 tank of gas. So consume it.
-                Log.d(TAG, "Purchase is gas. Starting gas consumption.");
+                Log.d(TAG, "Purchase is gas. Starting gas consumption. > > " + purchase);
                 try {
                     mHelper.consumeAsync(purchase, mConsumeFinishedListener);
                 } catch (IabAsyncInProgressException e) {
@@ -520,16 +528,14 @@ public class MainActivity extends Activity implements IabBroadcastListener,
                     setWaitScreen(false);
                     return;
                 }
-            }
-            else if (purchase.getSku().equals(SKU_PREMIUM)) {
+            } else if (purchase.getSku().equals(SKU_PREMIUM)) {
                 // bought the premium upgrade!
                 Log.d(TAG, "Purchase is premium upgrade. Congratulating user.");
                 alert("Thank you for upgrading to premium!");
                 mIsPremium = true;
                 updateUi();
                 setWaitScreen(false);
-            }
-            else if (purchase.getSku().equals(SKU_INFINITE_GAS_MONTHLY)
+            } else if (purchase.getSku().equals(SKU_INFINITE_GAS_MONTHLY)
                     || purchase.getSku().equals(SKU_INFINITE_GAS_YEARLY)) {
                 // bought the infinite gas subscription
                 Log.d(TAG, "Infinite gas subscription purchased.");
@@ -562,8 +568,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
                 mTank = mTank == TANK_MAX ? TANK_MAX : mTank + 1;
                 saveData();
                 alert("You filled 1/4 tank. Your tank is now " + String.valueOf(mTank) + "/4 full!");
-            }
-            else {
+            } else {
                 complain("Error while consuming: " + result);
             }
             updateUi();
@@ -575,7 +580,8 @@ public class MainActivity extends Activity implements IabBroadcastListener,
     // Drive button clicked. Burn gas!
     public void onDriveButtonClicked(View arg0) {
         Log.d(TAG, "Drive button clicked.");
-        if (!mSubscribedToInfiniteGas && mTank <= 0) alert("Oh, no! You are out of gas! Try buying some!");
+        if (!mSubscribedToInfiniteGas && mTank <= 0)
+            alert("Oh, no! You are out of gas! Try buying some!");
         else {
             if (!mSubscribedToInfiniteGas) --mTank;
             saveData();
@@ -606,7 +612,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
     // updates UI to reflect model
     public void updateUi() {
         // update the car color to reflect premium status or lack thereof
-        ((ImageView)findViewById(R.id.free_or_premium)).setImageResource(mIsPremium ? R.drawable.premium : R.drawable.free);
+        ((ImageView) findViewById(R.id.free_or_premium)).setImageResource(mIsPremium ? R.drawable.premium : R.drawable.free);
 
         // "Upgrade" button is only visible if the user is not premium
         findViewById(R.id.upgrade_button).setVisibility(mIsPremium ? View.GONE : View.VISIBLE);
@@ -622,11 +628,10 @@ public class MainActivity extends Activity implements IabBroadcastListener,
 
         // update gas gauge to reflect tank status
         if (mSubscribedToInfiniteGas) {
-            ((ImageView)findViewById(R.id.gas_gauge)).setImageResource(R.drawable.gas_inf);
-        }
-        else {
+            ((ImageView) findViewById(R.id.gas_gauge)).setImageResource(R.drawable.gas_inf);
+        } else {
             int index = mTank >= TANK_RES_IDS.length ? TANK_RES_IDS.length - 1 : mTank;
-            ((ImageView)findViewById(R.id.gas_gauge)).setImageResource(TANK_RES_IDS[index]);
+            ((ImageView) findViewById(R.id.gas_gauge)).setImageResource(TANK_RES_IDS[index]);
         }
     }
 
