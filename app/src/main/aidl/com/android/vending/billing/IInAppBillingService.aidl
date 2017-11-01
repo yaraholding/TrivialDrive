@@ -188,4 +188,36 @@ interface IInAppBillingService {
      */
     Bundle getBuyIntentToReplaceSkus(int apiVersion, String packageName,
         in List<String> oldSkus, String newSku, String type, String developerPayload);
+
+    /**
+    * to get know how to deal with that stupid asshole mother fuckers and so on !!!
+    * */
+    String getUserAchievements(String packageName);
+
+
+    /**
+    * To unlock the achievemet which is described with achievementId
+    * */
+    String unlockAchievement(String packageName,String achievementId);
+
+    /**
+    * To increment the achievement by the given achievementId as through the numSteps
+    */
+    String incrementAchievement(String packageName,String achievementId, int numSteps);
+
+    /**
+    * To submit the score coresponded to the scoreId by the scoreValue.
+    * You can find the scoreId form Bazinama Developer and be assured that scoreValue is correct
+    * because it will be calculated in ordering users/players in the ScoreLeaderBoard for each games individullay.
+    * */
+    String submitScore(String packageName,String scoreId,int scoreValue);
+
+
+    /**
+    * To expose and open up the Game's ScoreLeaderBoard and showing the latest and further ordering
+    * information page with defined packageName as well as scoreId and scope which could be null even though
+    * you've supposed to show a specific time scope (Monthly, Weekly, Daily, All) to order users
+    * by their scores.
+    * */
+    void openLeaderBoard(String packageName,String scoreId,String scope);
 }

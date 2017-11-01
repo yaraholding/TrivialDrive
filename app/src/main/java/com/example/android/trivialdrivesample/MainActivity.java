@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
@@ -97,42 +98,31 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         OnClickListener {
     // Debug tag, for logging
     static final String TAG = "TrivialDrive";
-
+    // SKUs for our products: the premium upgrade (non-consumable) and gas (consumable)
+    static final String SKU_PREMIUM = "premium";
+    static final String SKU_GAS = "gas";
+    // SKU for our subscription (infinite gas)
+    static final String SKU_INFINITE_GAS_MONTHLY = "infinite_gas_monthly";
+    static final String SKU_INFINITE_GAS_YEARLY = "infinite_gas_yearly";
+    // (arbitrary) request code for the purchase flow
+    static final int RC_REQUEST = 10001;
+    // How many units (1/4 tank is our unit) fill in the tank.
+    static final int TANK_MAX = 4;
+    // Graphics for the gas gauge
+    static int[] TANK_RES_IDS = {R.drawable.gas0, R.drawable.gas1, R.drawable.gas2,
+            R.drawable.gas3, R.drawable.gas4};
     // Does the user have the premium upgrade?
     boolean mIsPremium = false;
-
     // Does the user have an active subscription to the infinite gas plan?
     boolean mSubscribedToInfiniteGas = false;
-
     // Will the subscription auto-renew?
     boolean mAutoRenewEnabled = false;
-
     // Tracks the currently owned infinite gas SKU, and the options in the Manage dialog
     String mInfiniteGasSku = "";
     String mFirstChoiceSku = "";
     String mSecondChoiceSku = "";
-
     // Used to select between purchasing gas on a monthly or yearly basis
     String mSelectedSubscriptionPeriod = "";
-
-    // SKUs for our products: the premium upgrade (non-consumable) and gas (consumable)
-    static final String SKU_PREMIUM = "premium";
-    static final String SKU_GAS = "gas";
-
-    // SKU for our subscription (infinite gas)
-    static final String SKU_INFINITE_GAS_MONTHLY = "infinite_gas_monthly";
-    static final String SKU_INFINITE_GAS_YEARLY = "infinite_gas_yearly";
-
-    // (arbitrary) request code for the purchase flow
-    static final int RC_REQUEST = 10001;
-
-    // Graphics for the gas gauge
-    static int[] TANK_RES_IDS = {R.drawable.gas0, R.drawable.gas1, R.drawable.gas2,
-            R.drawable.gas3, R.drawable.gas4};
-
-    // How many units (1/4 tank is our unit) fill in the tank.
-    static final int TANK_MAX = 4;
-
     // Current amount of gas in tank, in units
     int mTank;
 
@@ -141,6 +131,150 @@ public class MainActivity extends Activity implements IabBroadcastListener,
 
     // Provides purchase notification while this app is running
     IabBroadcastReceiver mBroadcastReceiver;
+    // Called when consumption is complete
+    IabHelper.OnConsumeFinishedListener mConsumeFinishedListener = new IabHelper.OnConsumeFinishedListener() {
+        public void onConsumeFinished(Purchase purchase, IabResult result) {
+            Log.d(TAG, "Consumption finished. Purchase: " + purchase + ", result: " + result);
+
+            // if we were disposed of in the meantime, quit.
+            if (mHelper == null) return;
+
+            // We know this is the "gas" sku because it's the only one we consume,
+            // so we don't check which sku was consumed. If you have more than one
+            // sku, you probably should check...
+            if (result.isSuccess()) {
+                // successfully consumed, so we apply the effects of the item in our
+                // game world's logic, which in our case means filling the gas tank a bit
+                Log.d(TAG, "Consumption successful. Provisioning.");
+                mTank = mTank == TANK_MAX ? TANK_MAX : mTank + 1;
+                saveData();
+                alert("You filled 1/4 tank. Your tank is now " + String.valueOf(mTank) + "/4 full!");
+            } else {
+                complain("Error while consuming: " + result);
+            }
+            updateUi();
+            setWaitScreen(false);
+            Log.d(TAG, "End consumption flow.");
+        }
+    };
+    // Listener that's called when we finish querying the items and subscriptions we own
+    IabHelper.QueryInventoryFinishedListener mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
+        public void onQueryInventoryFinished(IabResult result, Inventory inventory) {
+            Log.d(TAG, "Query inventory finished.");
+
+            // Have we been disposed of in the meantime? If so, quit.
+            if (mHelper == null) return;
+
+            // Is it a failure?
+            if (result.isFailure()) {
+                complain("Failed to query inventory: " + result);
+                return;
+            }
+
+            Log.d(TAG, "Query inventory was successful.");
+
+            /*
+             * Check for items we own. Notice that for each purchase, we check
+             * the developer payload to see if it's correct! See
+             * verifyDeveloperPayload().
+             */
+
+            // Do we have the premium upgrade?
+            Purchase premiumPurchase = inventory.getPurchase(SKU_PREMIUM);
+            mIsPremium = (premiumPurchase != null && verifyDeveloperPayload(premiumPurchase));
+            Log.d(TAG, "User is " + (mIsPremium ? "PREMIUM" : "NOT PREMIUM"));
+
+            // First find out which subscription is auto renewing
+            Purchase gasMonthly = inventory.getPurchase(SKU_INFINITE_GAS_MONTHLY);
+            Purchase gasYearly = inventory.getPurchase(SKU_INFINITE_GAS_YEARLY);
+            if (gasMonthly != null && gasMonthly.isAutoRenewing()) {
+                mInfiniteGasSku = SKU_INFINITE_GAS_MONTHLY;
+                mAutoRenewEnabled = true;
+            } else if (gasYearly != null && gasYearly.isAutoRenewing()) {
+                mInfiniteGasSku = SKU_INFINITE_GAS_YEARLY;
+                mAutoRenewEnabled = true;
+            } else {
+                mInfiniteGasSku = "";
+                mAutoRenewEnabled = false;
+            }
+
+            // The user is subscribed if either subscription exists, even if neither is auto
+            // renewing
+            mSubscribedToInfiniteGas = (gasMonthly != null && verifyDeveloperPayload(gasMonthly))
+                    || (gasYearly != null && verifyDeveloperPayload(gasYearly));
+            Log.d(TAG, "User " + (mSubscribedToInfiniteGas ? "HAS" : "DOES NOT HAVE")
+                    + " infinite gas subscription.");
+            if (mSubscribedToInfiniteGas) mTank = TANK_MAX;
+
+            // Check for gas delivery -- if we own gas, we should fill up the tank immediately
+            Purchase gasPurchase = inventory.getPurchase(SKU_GAS);
+            if (gasPurchase != null && verifyDeveloperPayload(gasPurchase)) {
+                // It seems you have some items in the inventory objects even about subscription items
+                Log.d(TAG, "We have gas. Consuming it.");
+                try {
+                    mHelper.consumeAsync(inventory.getPurchase(SKU_GAS), mConsumeFinishedListener);
+                } catch (IabAsyncInProgressException e) {
+                    complain("Error consuming gas. Another async operation in progress.");
+                }
+                return;
+            }
+
+            updateUi();
+            setWaitScreen(false);
+            Log.d(TAG, "Initial inventory query finished; enabling main UI.");
+        }
+    };
+    // Callback for when a purchase is finished
+    IabHelper.OnIabPurchaseFinishedListener mPurchaseFinishedListener = new IabHelper.OnIabPurchaseFinishedListener() {
+        public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
+            Log.d(TAG, "Purchase finished: " + result + ", purchase: " + purchase);
+
+            // if we were disposed of in the meantime, quit.
+            if (mHelper == null) return;
+
+            if (result.isFailure()) {
+                complain("Error purchasing: " + result);
+                setWaitScreen(false);
+                return;
+            }
+            if (!verifyDeveloperPayload(purchase)) {
+                complain("Error purchasing. Authenticity verification failed.");
+                setWaitScreen(false);
+                return;
+            }
+
+            Log.d(TAG, "Purchase successful.");
+            if (purchase.getSku().equals(SKU_GAS)) {
+                // bought 1/4 tank of gas. So consume it.
+                Log.d(TAG, "Purchase is gas. Starting gas consumption. > > " + purchase);
+                try {
+                    mHelper.consumeAsync(purchase, mConsumeFinishedListener);
+                } catch (IabAsyncInProgressException e) {
+                    complain("Error consuming gas. Another async operation in progress.");
+                    setWaitScreen(false);
+                    return;
+                }
+            } else if (purchase.getSku().equals(SKU_PREMIUM)) {
+                // bought the premium upgrade!
+                Log.d(TAG, "Purchase is premium upgrade. Congratulating user.");
+                alert("Thank you for upgrading to premium!");
+                mIsPremium = true;
+                updateUi();
+                setWaitScreen(false);
+            } else if (purchase.getSku().equals(SKU_INFINITE_GAS_MONTHLY)
+                    || purchase.getSku().equals(SKU_INFINITE_GAS_YEARLY)) {
+                // bought the infinite gas subscription
+                Log.d(TAG, "Infinite gas subscription purchased.");
+                alert("Thank you for subscribing to infinite gas!");
+                mSubscribedToInfiniteGas = true;
+                mAutoRenewEnabled = purchase.isAutoRenewing();
+                mInfiniteGasSku = purchase.getSku();
+                mTank = TANK_MAX;
+                updateUi();
+                setWaitScreen(false);
+            }
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -217,75 +351,8 @@ public class MainActivity extends Activity implements IabBroadcastListener,
                 }
             }
         });
+
     }
-
-    // Listener that's called when we finish querying the items and subscriptions we own
-    IabHelper.QueryInventoryFinishedListener mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
-        public void onQueryInventoryFinished(IabResult result, Inventory inventory) {
-            Log.d(TAG, "Query inventory finished.");
-
-            // Have we been disposed of in the meantime? If so, quit.
-            if (mHelper == null) return;
-
-            // Is it a failure?
-            if (result.isFailure()) {
-                complain("Failed to query inventory: " + result);
-                return;
-            }
-
-            Log.d(TAG, "Query inventory was successful.");
-
-            /*
-             * Check for items we own. Notice that for each purchase, we check
-             * the developer payload to see if it's correct! See
-             * verifyDeveloperPayload().
-             */
-
-            // Do we have the premium upgrade?
-            Purchase premiumPurchase = inventory.getPurchase(SKU_PREMIUM);
-            mIsPremium = (premiumPurchase != null && verifyDeveloperPayload(premiumPurchase));
-            Log.d(TAG, "User is " + (mIsPremium ? "PREMIUM" : "NOT PREMIUM"));
-
-            // First find out which subscription is auto renewing
-            Purchase gasMonthly = inventory.getPurchase(SKU_INFINITE_GAS_MONTHLY);
-            Purchase gasYearly = inventory.getPurchase(SKU_INFINITE_GAS_YEARLY);
-            if (gasMonthly != null && gasMonthly.isAutoRenewing()) {
-                mInfiniteGasSku = SKU_INFINITE_GAS_MONTHLY;
-                mAutoRenewEnabled = true;
-            } else if (gasYearly != null && gasYearly.isAutoRenewing()) {
-                mInfiniteGasSku = SKU_INFINITE_GAS_YEARLY;
-                mAutoRenewEnabled = true;
-            } else {
-                mInfiniteGasSku = "";
-                mAutoRenewEnabled = false;
-            }
-
-            // The user is subscribed if either subscription exists, even if neither is auto
-            // renewing
-            mSubscribedToInfiniteGas = (gasMonthly != null && verifyDeveloperPayload(gasMonthly))
-                    || (gasYearly != null && verifyDeveloperPayload(gasYearly));
-            Log.d(TAG, "User " + (mSubscribedToInfiniteGas ? "HAS" : "DOES NOT HAVE")
-                    + " infinite gas subscription.");
-            if (mSubscribedToInfiniteGas) mTank = TANK_MAX;
-
-            // Check for gas delivery -- if we own gas, we should fill up the tank immediately
-            Purchase gasPurchase = inventory.getPurchase(SKU_GAS);
-            if (gasPurchase != null && verifyDeveloperPayload(gasPurchase)) {
-                // It seems you have some items in the inventory objects even about subscription items
-                Log.d(TAG, "We have gas. Consuming it.");
-                try {
-                    mHelper.consumeAsync(inventory.getPurchase(SKU_GAS), mConsumeFinishedListener);
-                } catch (IabAsyncInProgressException e) {
-                    complain("Error consuming gas. Another async operation in progress.");
-                }
-                return;
-            }
-
-            updateUi();
-            setWaitScreen(false);
-            Log.d(TAG, "Initial inventory query finished; enabling main UI.");
-        }
-    };
 
     @Override
     public void receivedBroadcast() {
@@ -333,7 +400,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
 
     @NonNull
     private String getPayloadString() {
-        return "Sample New Developer Payload at : "+ System.nanoTime();
+        return "Sample New Developer Payload at : " + System.nanoTime();
     }
 
     // User clicked the "Upgrade to Premium" button.
@@ -404,6 +471,73 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         dialog.show();
     }
 
+    /**
+     * On Get User Achievements Clicked
+     *
+     * @param view
+     */
+    public void onGetUserAchievementsClicked(View view) {
+        Log.d(TAG, "onGetUserAchievementsClicked !!!");
+        try {
+            final String userAchievements = mHelper.getUserAchievements(view.getContext().getPackageName());
+            Log.d(TAG, "<-| userAchievements : " + userAchievements + " |->");
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * When user wanted to gain new achievement
+     *
+     * @param view
+     */
+    public void onUnlockUserAchievementsClicked(View view) {
+        Log.d(TAG, "onUnlockUserAchievementsClicked : " + view);
+        try {
+            final String userAchievement = mHelper.unlockUserAchievement(view.getContext().getPackageName(), "1");
+            Log.d(TAG, "onUnlockUserAchievementsClicked userAchievement: " + userAchievement);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * to get the achievement (which is described in  previous steps;
+     */
+    public void onIncrementUserAchievementsClicked(View view) {
+        Log.d(TAG, "onIncrementAchievement  called via : " + view);
+        mHelper.incrementAchievement(view.getContext().getPackageName(), "2", 10);
+    }
+
+    /**
+     * When user get a hit of score and you wanted to submit the score for the
+     * Bazinam SDK, please notice that this score will be involved in leader board calculations,
+     * it means that each user in each game will be ordered by their scores that already have submitted
+     * while they were struggling to achieve more and more.
+     *
+     * @param view
+     */
+    public void onSubmitScoreClicked(View view) {
+        Log.d(TAG, "onSubmitScoreClicked() called with: view = [" + view + "]");
+        mHelper.submitScore(view.getContext().getPackageName(), "1", 100);
+    }
+
+
+    /**
+     * Open up the leader board for score id "1"
+     * <p>
+     * packageName: send your package name as same as you've registered the game in developer console
+     * scoreId: send the score id you can find it from developer console same as you've entered the game's score
+     * scope: it's an optional parameter it can be null if you don't have any idea about time scale
+     * </p>
+     *
+     * @param view
+     */
+    public void onOpenUpLeaderBoardClicked(View view) {
+        mHelper.openLeaderBoard(view.getContext().getPackageName(), "1", "ALL");
+    }
+
     @Override
     public void onClick(DialogInterface dialog, int id) {
         if (id == 0 /* First choice item */) {
@@ -471,7 +605,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
      */
     boolean verifyDeveloperPayload(Purchase p) {
         String payload = p.getDeveloperPayload();
-        Log.d(TAG, "verifyDeveloperPayload: >>>>>> payload : "+payload);
+        Log.d(TAG, "verifyDeveloperPayload: >>>>>> payload : " + payload);
         /*
          * TODO: verify that the developer payload of the purchase is correct. It will be
          * the same one that you sent when initiating the purchase.
@@ -497,85 +631,6 @@ public class MainActivity extends Activity implements IabBroadcastListener,
 
         return true;
     }
-
-    // Callback for when a purchase is finished
-    IabHelper.OnIabPurchaseFinishedListener mPurchaseFinishedListener = new IabHelper.OnIabPurchaseFinishedListener() {
-        public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
-            Log.d(TAG, "Purchase finished: " + result + ", purchase: " + purchase);
-
-            // if we were disposed of in the meantime, quit.
-            if (mHelper == null) return;
-
-            if (result.isFailure()) {
-                complain("Error purchasing: " + result);
-                setWaitScreen(false);
-                return;
-            }
-            if (!verifyDeveloperPayload(purchase)) {
-                complain("Error purchasing. Authenticity verification failed.");
-                setWaitScreen(false);
-                return;
-            }
-
-            Log.d(TAG, "Purchase successful.");
-            if (purchase.getSku().equals(SKU_GAS)) {
-                // bought 1/4 tank of gas. So consume it.
-                Log.d(TAG, "Purchase is gas. Starting gas consumption. > > " + purchase);
-                try {
-                    mHelper.consumeAsync(purchase, mConsumeFinishedListener);
-                } catch (IabAsyncInProgressException e) {
-                    complain("Error consuming gas. Another async operation in progress.");
-                    setWaitScreen(false);
-                    return;
-                }
-            } else if (purchase.getSku().equals(SKU_PREMIUM)) {
-                // bought the premium upgrade!
-                Log.d(TAG, "Purchase is premium upgrade. Congratulating user.");
-                alert("Thank you for upgrading to premium!");
-                mIsPremium = true;
-                updateUi();
-                setWaitScreen(false);
-            } else if (purchase.getSku().equals(SKU_INFINITE_GAS_MONTHLY)
-                    || purchase.getSku().equals(SKU_INFINITE_GAS_YEARLY)) {
-                // bought the infinite gas subscription
-                Log.d(TAG, "Infinite gas subscription purchased.");
-                alert("Thank you for subscribing to infinite gas!");
-                mSubscribedToInfiniteGas = true;
-                mAutoRenewEnabled = purchase.isAutoRenewing();
-                mInfiniteGasSku = purchase.getSku();
-                mTank = TANK_MAX;
-                updateUi();
-                setWaitScreen(false);
-            }
-        }
-    };
-
-    // Called when consumption is complete
-    IabHelper.OnConsumeFinishedListener mConsumeFinishedListener = new IabHelper.OnConsumeFinishedListener() {
-        public void onConsumeFinished(Purchase purchase, IabResult result) {
-            Log.d(TAG, "Consumption finished. Purchase: " + purchase + ", result: " + result);
-
-            // if we were disposed of in the meantime, quit.
-            if (mHelper == null) return;
-
-            // We know this is the "gas" sku because it's the only one we consume,
-            // so we don't check which sku was consumed. If you have more than one
-            // sku, you probably should check...
-            if (result.isSuccess()) {
-                // successfully consumed, so we apply the effects of the item in our
-                // game world's logic, which in our case means filling the gas tank a bit
-                Log.d(TAG, "Consumption successful. Provisioning.");
-                mTank = mTank == TANK_MAX ? TANK_MAX : mTank + 1;
-                saveData();
-                alert("You filled 1/4 tank. Your tank is now " + String.valueOf(mTank) + "/4 full!");
-            } else {
-                complain("Error while consuming: " + result);
-            }
-            updateUi();
-            setWaitScreen(false);
-            Log.d(TAG, "End consumption flow.");
-        }
-    };
 
     // Drive button clicked. Burn gas!
     public void onDriveButtonClicked(View arg0) {
@@ -673,4 +728,6 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         mTank = sp.getInt("tank", 2);
         Log.d(TAG, "Loaded data: tank = " + String.valueOf(mTank));
     }
+
+
 }

@@ -71,52 +71,6 @@ import java.util.List;
  * has not yet completed will result in an exception being thrown.
  */
 public class IabHelper {
-    // Is debug logging enabled?
-    boolean mDebugLog = false;
-    String mDebugTag = "IabHelper";
-
-    // Is setup done?
-    boolean mSetupDone = false;
-
-    // Has this object been disposed of? (If so, we should ignore callbacks, etc)
-    boolean mDisposed = false;
-
-    // Do we need to dispose this object after an in-progress asynchronous operation?
-    boolean mDisposeAfterAsync = false;
-
-    // Are subscriptions supported?
-    boolean mSubscriptionsSupported = false;
-
-    // Is subscription update supported?
-    boolean mSubscriptionUpdateSupported = false;
-
-    // Is an asynchronous operation in progress?
-    // (only one at a time can be in progress)
-    boolean mAsyncInProgress = false;
-
-    // Ensure atomic access to mAsyncInProgress and mDisposeAfterAsync.
-    private final Object mAsyncInProgressLock = new Object();
-
-    // (for logging/debugging)
-    // if mAsyncInProgress == true, what asynchronous operation is in progress?
-    String mAsyncOperation = "";
-
-    // Context we were passed during initialization
-    Context mContext;
-
-    // Connection to the service
-    IInAppBillingService mService;
-    ServiceConnection mServiceConn;
-
-    // The request code used to launch purchase flow
-    int mRequestCode;
-
-    // The item type of the current purchase flow
-    String mPurchasingItemType;
-
-    // Public key for verifying signature, in base64 encoding
-    String mSignatureBase64 = null;
-
     // Billing response codes
     public static final int BILLING_RESPONSE_RESULT_OK = 0;
     public static final int BILLING_RESPONSE_RESULT_USER_CANCELED = 1;
@@ -127,7 +81,6 @@ public class IabHelper {
     public static final int BILLING_RESPONSE_RESULT_ERROR = 6;
     public static final int BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED = 7;
     public static final int BILLING_RESPONSE_RESULT_ITEM_NOT_OWNED = 8;
-
     // IAB Helper error codes
     public static final int IABHELPER_ERROR_BASE = -1000;
     public static final int IABHELPER_REMOTE_EXCEPTION = -1001;
@@ -141,7 +94,6 @@ public class IabHelper {
     public static final int IABHELPER_SUBSCRIPTIONS_NOT_AVAILABLE = -1009;
     public static final int IABHELPER_INVALID_CONSUMPTION = -1010;
     public static final int IABHELPER_SUBSCRIPTION_UPDATE_NOT_AVAILABLE = -1011;
-
     // Keys for the responses from InAppBillingService
     public static final String RESPONSE_CODE = "RESPONSE_CODE";
     public static final String RESPONSE_GET_SKU_DETAILS_LIST = "DETAILS_LIST";
@@ -152,14 +104,47 @@ public class IabHelper {
     public static final String RESPONSE_INAPP_PURCHASE_DATA_LIST = "INAPP_PURCHASE_DATA_LIST";
     public static final String RESPONSE_INAPP_SIGNATURE_LIST = "INAPP_DATA_SIGNATURE_LIST";
     public static final String INAPP_CONTINUATION_TOKEN = "INAPP_CONTINUATION_TOKEN";
-
     // Item types
     public static final String ITEM_TYPE_INAPP = "inapp";
     public static final String ITEM_TYPE_SUBS = "subs";
-
     // some fields on the getSkuDetails response bundle
     public static final String GET_SKU_DETAILS_ITEM_LIST = "ITEM_ID_LIST";
     public static final String GET_SKU_DETAILS_ITEM_TYPE_LIST = "ITEM_TYPE_LIST";
+    // Ensure atomic access to mAsyncInProgress and mDisposeAfterAsync.
+    private final Object mAsyncInProgressLock = new Object();
+    // Is debug logging enabled?
+    boolean mDebugLog = false;
+    String mDebugTag = "IabHelper";
+    // Is setup done?
+    boolean mSetupDone = false;
+    // Has this object been disposed of? (If so, we should ignore callbacks, etc)
+    boolean mDisposed = false;
+    // Do we need to dispose this object after an in-progress asynchronous operation?
+    boolean mDisposeAfterAsync = false;
+    // Are subscriptions supported?
+    boolean mSubscriptionsSupported = false;
+    // Is subscription update supported?
+    boolean mSubscriptionUpdateSupported = false;
+    // Is an asynchronous operation in progress?
+    // (only one at a time can be in progress)
+    boolean mAsyncInProgress = false;
+    // (for logging/debugging)
+    // if mAsyncInProgress == true, what asynchronous operation is in progress?
+    String mAsyncOperation = "";
+    // Context we were passed during initialization
+    Context mContext;
+    // Connection to the service
+    IInAppBillingService mService;
+    ServiceConnection mServiceConn;
+    // The request code used to launch purchase flow
+    int mRequestCode;
+    // The item type of the current purchase flow
+    String mPurchasingItemType;
+    // Public key for verifying signature, in base64 encoding
+    String mSignatureBase64 = null;
+    // The listener registered on launchPurchaseFlow, which we have to call back when
+    // the purchase finishes
+    OnIabPurchaseFinishedListener mPurchaseListener;
 
     /**
      * Creates an instance. After creation, it will not yet be ready to use. You must perform
@@ -179,6 +164,39 @@ public class IabHelper {
     }
 
     /**
+     * Returns a human-readable description for the given response code.
+     *
+     * @param code The response code
+     * @return A human-readable string explaining the result code.
+     * It also includes the result code numerically.
+     */
+    public static String getResponseDesc(int code) {
+        String[] iab_msgs = ("0:OK/1:User Canceled/2:Unknown/" +
+                "3:Billing Unavailable/4:Item unavailable/" +
+                "5:Developer Error/6:Error/7:Item Already Owned/" +
+                "8:Item not owned").split("/");
+        String[] iabhelper_msgs = ("0:OK/-1001:Remote exception during initialization/" +
+                "-1002:Bad response received/" +
+                "-1003:Purchase signature verification failed/" +
+                "-1004:Send intent failed/" +
+                "-1005:User cancelled/" +
+                "-1006:Unknown purchase response/" +
+                "-1007:Missing token/" +
+                "-1008:Unknown error/" +
+                "-1009:Subscriptions not available/" +
+                "-1010:Invalid consumption attempt").split("/");
+
+        if (code <= IABHELPER_ERROR_BASE) {
+            int index = IABHELPER_ERROR_BASE - code;
+            if (index >= 0 && index < iabhelper_msgs.length) return iabhelper_msgs[index];
+            else return String.valueOf(code) + ":Unknown IAB Helper Error";
+        } else if (code < 0 || code >= iab_msgs.length)
+            return String.valueOf(code) + ":Unknown";
+        else
+            return iab_msgs[code];
+    }
+
+    /**
      * Enables or disable debug logging through LogCat.
      */
     public void enableDebugLogging(boolean enable, String tag) {
@@ -193,16 +211,11 @@ public class IabHelper {
     }
 
     /**
-     * Callback for setup process. This listener's {@link #onIabSetupFinished} method is called
-     * when the setup process is complete.
+     * To get to know which achievements related and gained by user
      */
-    public interface OnIabSetupFinishedListener {
-        /**
-         * Called to notify that setup is complete.
-         *
-         * @param result The result of the setup process.
-         */
-        void onIabSetupFinished(IabResult result);
+    public String getUserAchievements(String packageName) throws RemoteException {
+        logDebug("Package Name : " + packageName);
+        return mService.getUserAchievements(packageName);
     }
 
     /**
@@ -371,27 +384,6 @@ public class IabHelper {
         return mSubscriptionsSupported;
     }
 
-
-    /**
-     * Callback that notifies when a purchase is finished.
-     */
-    public interface OnIabPurchaseFinishedListener {
-        /**
-         * Called to notify that an in-app purchase finished. If the purchase was successful,
-         * then the sku parameter specifies which item was purchased. If the purchase failed,
-         * the sku and extraData parameters may or may not be null, depending on how far the purchase
-         * process went.
-         *
-         * @param result The result of the purchase.
-         * @param info   The purchase information (null if purchase failed)
-         */
-        void onIabPurchaseFinished(IabResult result, Purchase info);
-    }
-
-    // The listener registered on launchPurchaseFlow, which we have to call back when
-    // the purchase finishes
-    OnIabPurchaseFinishedListener mPurchaseListener;
-
     public void launchPurchaseFlow(Activity act, String sku, int requestCode, OnIabPurchaseFinishedListener listener)
             throws IabAsyncInProgressException {
         launchPurchaseFlow(act, sku, requestCode, listener, "");
@@ -485,7 +477,8 @@ public class IabHelper {
             mPurchasingItemType = itemType;
             act.startIntentSenderForResult(pendingIntent.getIntentSender(),
                     requestCode, new Intent(),
-                    Integer.valueOf(0), Integer.valueOf(0),
+                    Integer.valueOf(0),
+                    Integer.valueOf(0),
                     Integer.valueOf(0));
         } catch (SendIntentException e) {
             logError("SendIntentException while launching purchase flow for sku " + sku);
@@ -659,20 +652,6 @@ public class IabHelper {
     }
 
     /**
-     * Listener that notifies when an inventory query operation completes.
-     */
-    public interface QueryInventoryFinishedListener {
-        /**
-         * Called to notify that an inventory query operation completed.
-         *
-         * @param result The result of the operation.
-         * @param inv    The inventory.
-         */
-        void onQueryInventoryFinished(IabResult result, Inventory inv);
-    }
-
-
-    /**
      * Asynchronous wrapper for inventory query. This will perform an inventory
      * query as described in {@link #queryInventory}, but will do so asynchronously
      * and call back the specified listener upon completion. This method is safe to
@@ -762,33 +741,6 @@ public class IabHelper {
     }
 
     /**
-     * Callback that notifies when a consumption operation finishes.
-     */
-    public interface OnConsumeFinishedListener {
-        /**
-         * Called to notify that a consumption has finished.
-         *
-         * @param purchase The purchase that was (or was to be) consumed.
-         * @param result   The result of the consumption operation.
-         */
-        void onConsumeFinished(Purchase purchase, IabResult result);
-    }
-
-    /**
-     * Callback that notifies when a multi-item consumption operation finishes.
-     */
-    public interface OnConsumeMultiFinishedListener {
-        /**
-         * Called to notify that a consumption of multiple items has finished.
-         *
-         * @param purchases The purchases that were (or were to be) consumed.
-         * @param results   The results of each consumption operation, corresponding to each
-         *                  sku.
-         */
-        void onConsumeMultiFinished(List<Purchase> purchases, List<IabResult> results);
-    }
-
-    /**
      * Asynchronous wrapper to item consumption. Works like {@link #consume}, but
      * performs the consumption in the background and notifies completion through
      * the provided listener. This method is safe to call from a UI thread.
@@ -817,40 +769,6 @@ public class IabHelper {
         checkSetupDone("consume");
         consumeAsyncInternal(purchases, null, listener);
     }
-
-    /**
-     * Returns a human-readable description for the given response code.
-     *
-     * @param code The response code
-     * @return A human-readable string explaining the result code.
-     * It also includes the result code numerically.
-     */
-    public static String getResponseDesc(int code) {
-        String[] iab_msgs = ("0:OK/1:User Canceled/2:Unknown/" +
-                "3:Billing Unavailable/4:Item unavailable/" +
-                "5:Developer Error/6:Error/7:Item Already Owned/" +
-                "8:Item not owned").split("/");
-        String[] iabhelper_msgs = ("0:OK/-1001:Remote exception during initialization/" +
-                "-1002:Bad response received/" +
-                "-1003:Purchase signature verification failed/" +
-                "-1004:Send intent failed/" +
-                "-1005:User cancelled/" +
-                "-1006:Unknown purchase response/" +
-                "-1007:Missing token/" +
-                "-1008:Unknown error/" +
-                "-1009:Subscriptions not available/" +
-                "-1010:Invalid consumption attempt").split("/");
-
-        if (code <= IABHELPER_ERROR_BASE) {
-            int index = IABHELPER_ERROR_BASE - code;
-            if (index >= 0 && index < iabhelper_msgs.length) return iabhelper_msgs[index];
-            else return String.valueOf(code) + ":Unknown IAB Helper Error";
-        } else if (code < 0 || code >= iab_msgs.length)
-            return String.valueOf(code) + ":Unknown";
-        else
-            return iab_msgs[code];
-    }
-
 
     // Checks that setup was done; if not, throws an exception.
     void checkSetupDone(String operation) {
@@ -917,16 +835,6 @@ public class IabHelper {
                     // calling dispose().
                 }
             }
-        }
-    }
-
-    /**
-     * Exception thrown when the requested operation cannot be started because an async operation
-     * is still in progress.
-     */
-    public static class IabAsyncInProgressException extends Exception {
-        public IabAsyncInProgressException(String message) {
-            super(message);
         }
     }
 
@@ -1086,7 +994,8 @@ public class IabHelper {
                 for (Purchase purchase : purchases) {
                     try {
                         consume(purchase);
-                        results.add(new IabResult(BILLING_RESPONSE_RESULT_OK, "Successful consume of sku " + purchase.getSku()));
+                        results.add(new IabResult(BILLING_RESPONSE_RESULT_OK,
+                                "Successful consume of sku " + purchase.getSku()));
                     } catch (IabException ex) {
                         results.add(ex.getResult());
                     }
@@ -1121,5 +1030,151 @@ public class IabHelper {
 
     void logWarn(String msg) {
         Log.w(mDebugTag, "In-app billing warning: " + msg);
+    }
+
+    /**
+     * To unlock the achievement
+     *
+     * @param packageName
+     */
+    public String unlockUserAchievement(String packageName, String achievementId) {
+        logDebug("unlockUserAchievement: " + packageName + " achievementId : " + achievementId);
+        try {
+            final String achievement = mService.unlockAchievement(packageName, achievementId);
+            logDebug("unlockUserAchievement : " + achievement);
+            return achievement;
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * to Increment achievement which must be an incremental by the given number steps,
+     * Notice: Once an achievement reaches at least the maximum number of steps,
+     * it will be unlocked automatically and then any further increments will be ignored.
+     */
+    public void incrementAchievement(String packageName, String achievementId, int numSteps) {
+        logDebug("incrementAchievement: " + packageName + " achievementID : " + achievementId + " numSteps: " + numSteps);
+        try {
+            final String achievement = mService.incrementAchievement(packageName, achievementId, numSteps);
+            logDebug("incrementAchievement : " + achievement);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * To submit the score corresponded to the scoreId by the given scoreValue.
+     *
+     * @param packageName
+     * @param scoreId
+     * @param scoreValue
+     */
+    public void submitScore(String packageName, String scoreId, int scoreValue) {
+        logDebug("submitScore() called with: packageName = [" + packageName + "], scoreId = [" + scoreId + "], scoreValue = [" + scoreValue + "]");
+        try {
+            final String submitScoreResult = mService.submitScore(packageName, scoreId, scoreValue);
+            logDebug("Submit the score result : " + submitScoreResult);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * To Expose users states and orders by their scores
+     * Notice: each time this function will be Games' LeaderBoard pops-up as an activity inside of your application/game
+     *
+     * @param packageName String value of the game's packageName, it must be as same as you've registered in BaziNama developer panel.
+     * @param scoreId     String value of score's id, you can find it in developer's panel
+     * @param scope       there are three scopes value (Time Scales) "MONTHLY", "WEEKLY", "DAILY" , "ALL"
+     */
+    public void openLeaderBoard(String packageName, String scoreId, String scope) {
+        logDebug("openLeaderBoard() called with: packageName = [" + packageName + "], scoreId = [" + scoreId + "], scope = [" + scope + "]");
+        try {
+            mService.openLeaderBoard(packageName, scoreId, scope);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Callback for setup process. This listener's {@link #onIabSetupFinished} method is called
+     * when the setup process is complete.
+     */
+    public interface OnIabSetupFinishedListener {
+        /**
+         * Called to notify that setup is complete.
+         *
+         * @param result The result of the setup process.
+         */
+        void onIabSetupFinished(IabResult result);
+    }
+
+    /**
+     * Callback that notifies when a purchase is finished.
+     */
+    public interface OnIabPurchaseFinishedListener {
+        /**
+         * Called to notify that an in-app purchase finished. If the purchase was successful,
+         * then the sku parameter specifies which item was purchased. If the purchase failed,
+         * the sku and extraData parameters may or may not be null, depending on how far the purchase
+         * process went.
+         *
+         * @param result The result of the purchase.
+         * @param info   The purchase information (null if purchase failed)
+         */
+        void onIabPurchaseFinished(IabResult result, Purchase info);
+    }
+
+    /**
+     * Listener that notifies when an inventory query operation completes.
+     */
+    public interface QueryInventoryFinishedListener {
+        /**
+         * Called to notify that an inventory query operation completed.
+         *
+         * @param result The result of the operation.
+         * @param inv    The inventory.
+         */
+        void onQueryInventoryFinished(IabResult result, Inventory inv);
+    }
+
+    /**
+     * Callback that notifies when a consumption operation finishes.
+     */
+    public interface OnConsumeFinishedListener {
+        /**
+         * Called to notify that a consumption has finished.
+         *
+         * @param purchase The purchase that was (or was to be) consumed.
+         * @param result   The result of the consumption operation.
+         */
+        void onConsumeFinished(Purchase purchase, IabResult result);
+    }
+
+    /**
+     * Callback that notifies when a multi-item consumption operation finishes.
+     */
+    public interface OnConsumeMultiFinishedListener {
+        /**
+         * Called to notify that a consumption of multiple items has finished.
+         *
+         * @param purchases The purchases that were (or were to be) consumed.
+         * @param results   The results of each consumption operation, corresponding to each
+         *                  sku.
+         */
+        void onConsumeMultiFinished(List<Purchase> purchases, List<IabResult> results);
+    }
+
+    /**
+     * Exception thrown when the requested operation cannot be started because an async operation
+     * is still in progress.
+     */
+    public static class IabAsyncInProgressException extends Exception {
+        public IabAsyncInProgressException(String message) {
+            super(message);
+        }
     }
 }
