@@ -488,7 +488,9 @@ public class MainActivity extends Activity implements IabBroadcastListener,
 
 
     /**
-     * When user wanted to gain new achievement
+     * When user wanted to gain new achievement and unlock it,
+     * you can pass the package name directly,
+     * and please find the achievement id from developer console.
      *
      * @param view
      */
