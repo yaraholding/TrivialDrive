@@ -479,7 +479,9 @@ public class MainActivity extends Activity implements IabBroadcastListener,
     public void onGetUserAchievementsClicked(View view) {
         Log.d(TAG, "onGetUserAchievementsClicked !!!");
         try {
-            final String userAchievements = mHelper.getUserAchievements(view.getContext().getPackageName());
+            final String userAchievements = mHelper.getUserAchievements(
+                    view.getContext().getPackageName() // Set The Game's package name
+            );
             Log.d(TAG, "<-| userAchievements : " + userAchievements + " |->");
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -497,7 +499,10 @@ public class MainActivity extends Activity implements IabBroadcastListener,
     public void onUnlockUserAchievementsClicked(View view) {
         Log.d(TAG, "onUnlockUserAchievementsClicked : " + view);
         try {
-            final String userAchievement = mHelper.unlockUserAchievement(view.getContext().getPackageName(), "1");
+            final String userAchievement = mHelper.unlockUserAchievement(
+                    view.getContext().getPackageName(),// Set The Game's package name
+                    "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL" // catch it from the developer panel when you defined the achievement
+            );
             Log.d(TAG, "onUnlockUserAchievementsClicked userAchievement: " + userAchievement);
         } catch (Exception e) {
             e.printStackTrace();
@@ -509,7 +514,11 @@ public class MainActivity extends Activity implements IabBroadcastListener,
      */
     public void onIncrementUserAchievementsClicked(View view) {
         Log.d(TAG, "onIncrementAchievement  called via : " + view);
-        mHelper.incrementAchievement(view.getContext().getPackageName(), "2", 10);
+        mHelper.incrementAchievement(
+                view.getContext().getPackageName(), // Set The Game's package name
+                "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL", // catch it from the developer panel when you defined the achievement
+                10 // You have to make an appropriate value for your achievement according to the game scenario
+        );
     }
 
     /**
@@ -522,7 +531,11 @@ public class MainActivity extends Activity implements IabBroadcastListener,
      */
     public void onSubmitScoreClicked(View view) {
         Log.d(TAG, "onSubmitScoreClicked() called with: view = [" + view + "]");
-        mHelper.submitScore(view.getContext().getPackageName(), "1", 100);
+        mHelper.submitScore(
+                view.getContext().getPackageName(), // Set The Game's package name
+                "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL", // catch it from the developer panel when you defined the score
+                100 // You have to make an appropriate value for your score according to the game scenario
+        );
     }
 
 
@@ -537,7 +550,10 @@ public class MainActivity extends Activity implements IabBroadcastListener,
      * @param view
      */
     public void onOpenUpLeaderBoardClicked(View view) {
-        mHelper.openLeaderBoard(view.getContext().getPackageName(), "1", "ALL");
+        mHelper.openLeaderBoard(view.getContext().getPackageName(),
+                "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL", // catch it from the developer panel when you defined the score
+                "ALL" // "ALL","MONTHLY","WEEKLY","DAILY"
+        );
     }
 
     @Override
