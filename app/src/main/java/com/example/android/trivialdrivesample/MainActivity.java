@@ -32,13 +32,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.example.android.trivialdrivesample.util.IabBroadcastReceiver;
-import com.example.android.trivialdrivesample.util.IabBroadcastReceiver.IabBroadcastListener;
-import com.example.android.trivialdrivesample.util.IabHelper;
-import com.example.android.trivialdrivesample.util.IabHelper.IabAsyncInProgressException;
-import com.example.android.trivialdrivesample.util.IabResult;
-import com.example.android.trivialdrivesample.util.Inventory;
-import com.example.android.trivialdrivesample.util.Purchase;
+import com.yara.bazinamainappbillinglibrary.IabBroadcastReceiver;
+import com.yara.bazinamainappbillinglibrary.IabHelper;
+import com.yara.bazinamainappbillinglibrary.IabResult;
+import com.yara.bazinamainappbillinglibrary.Inventory;
+import com.yara.bazinamainappbillinglibrary.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +92,7 @@ import java.util.List;
  * we have to apply its effects to our world and consume it. This
  * is also very important!
  */
-public class MainActivity extends Activity implements IabBroadcastListener,
+public class MainActivity extends Activity implements IabBroadcastReceiver.IabBroadcastListener,
         OnClickListener {
     // Debug tag, for logging
     static final String TAG = "TrivialDrive";
@@ -213,7 +211,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
                 Log.d(TAG, "We have gas. Consuming it.");
                 try {
                     mHelper.consumeAsync(inventory.getPurchase(SKU_GAS), mConsumeFinishedListener);
-                } catch (IabAsyncInProgressException e) {
+                } catch (IabHelper.IabAsyncInProgressException e) {
                     complain("Error consuming gas. Another async operation in progress.");
                 }
                 return;
@@ -249,7 +247,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
                 Log.d(TAG, "Purchase is gas. Starting gas consumption. > > " + purchase);
                 try {
                     mHelper.consumeAsync(purchase, mConsumeFinishedListener);
-                } catch (IabAsyncInProgressException e) {
+                } catch (IabHelper.IabAsyncInProgressException e) {
                     complain("Error consuming gas. Another async operation in progress.");
                     setWaitScreen(false);
                     return;
@@ -346,7 +344,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
                 Log.d(TAG, "Setup successful. Querying inventory.");
                 try {
                     mHelper.queryInventoryAsync(mGotInventoryListener);
-                } catch (IabAsyncInProgressException e) {
+                } catch (IabHelper.IabAsyncInProgressException e) {
                     complain("Error querying inventory. Another async operation in progress.");
                 }
             }
@@ -360,7 +358,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         Log.d(TAG, "Received broadcast notification. Querying inventory.");
         try {
             mHelper.queryInventoryAsync(mGotInventoryListener);
-        } catch (IabAsyncInProgressException e) {
+        } catch (IabHelper.IabAsyncInProgressException e) {
             complain("Error querying inventory. Another async operation in progress.");
         }
     }
@@ -392,7 +390,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         try {
             mHelper.launchPurchaseFlow(this, SKU_GAS, RC_REQUEST,
                     mPurchaseFinishedListener, payload);
-        } catch (IabAsyncInProgressException e) {
+        } catch (IabHelper.IabAsyncInProgressException e) {
             complain("Error launching purchase flow. Another async operation in progress.");
             setWaitScreen(false);
         }
@@ -416,7 +414,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         try {
             mHelper.launchPurchaseFlow(this, SKU_PREMIUM, RC_REQUEST,
                     mPurchaseFinishedListener, payload);
-        } catch (IabAsyncInProgressException e) {
+        } catch (IabHelper.IabAsyncInProgressException e) {
             complain("Error launching purchase flow. Another async operation in progress.");
             setWaitScreen(false);
         }
@@ -515,15 +513,15 @@ public class MainActivity extends Activity implements IabBroadcastListener,
     public void onIncrementUserAchievementsClicked(View view) {
         Log.d(TAG, "onIncrementAchievement  called via : " + view);
         mHelper.incrementAchievement(
-                view.getContext().getPackageName(), // Set The Game's package name
-                "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL", // catch it from the developer panel when you defined the achievement
+                view.getContext().getPackageName(), // Set the Game's package name
+                "2", // Catch it from the developer panel when you defined the achievement
                 10 // You have to make an appropriate value for your achievement according to the game scenario
         );
     }
 
     /**
      * When user get a hit of score and you wanted to submit the score for the
-     * Bazinam SDK, please notice that this score will be involved in leader board calculations,
+     * Bazinam SDK, Please notice that this score will be involved in leader board calculations,
      * it means that each user in each game will be ordered by their scores that already have submitted
      * while they were struggling to achieve more and more.
      *
@@ -533,7 +531,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
         Log.d(TAG, "onSubmitScoreClicked() called with: view = [" + view + "]");
         mHelper.submitScore(
                 view.getContext().getPackageName(), // Set The Game's package name
-                "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL", // catch it from the developer panel when you defined the score
+                "1", // Catch it from the developer panel when you defined the score
                 100 // You have to make an appropriate value for your score according to the game scenario
         );
     }
@@ -551,7 +549,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
      */
     public void onOpenUpLeaderBoardClicked(View view) {
         mHelper.openLeaderBoard(view.getContext().getPackageName(),
-                "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL", // catch it from the developer panel when you defined the score
+                "1", // catch it from the developer panel when you defined the score
                 "ALL" // "ALL","MONTHLY","WEEKLY","DAILY"
         );
     }
@@ -588,7 +586,7 @@ public class MainActivity extends Activity implements IabBroadcastListener,
             try {
                 mHelper.launchPurchaseFlow(this, mSelectedSubscriptionPeriod, IabHelper.ITEM_TYPE_SUBS,
                         oldSkus, RC_REQUEST, mPurchaseFinishedListener, payload);
-            } catch (IabAsyncInProgressException e) {
+            } catch (IabHelper.IabAsyncInProgressException e) {
                 complain("Error launching purchase flow. Another async operation in progress.");
                 setWaitScreen(false);
             }

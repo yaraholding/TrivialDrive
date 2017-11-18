@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.example.android.trivialdrivesample.util;
+package com.yara.bazinamainappbillinglibrary;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -410,7 +410,7 @@ public class IabHelper {
      * Initiate the UI flow for an in-app purchase. Call this method to initiate an in-app purchase,
      * which will involve bringing up the Google Play screen. The calling activity will be paused
      * while the user interacts with Google Play, and the result will be delivered via the
-     * activity's {@link android.app.Activity#onActivityResult} method, at which point you must call
+     * activity's {@link Activity#onActivityResult} method, at which point you must call
      * this object's {@link #handleActivityResult} method to continue the purchase flow. This method
      * MUST be called from the UI thread of the Activity.
      *
@@ -420,7 +420,7 @@ public class IabHelper {
      *                    ITEM_TYPE_SUBS)
      * @param oldSkus     A list of SKUs which the new SKU is replacing or null if there are none
      * @param requestCode A request code (to differentiate from other responses -- as in
-     *                    {@link android.app.Activity#startActivityForResult}).
+     *                    {@link Activity#startActivityForResult}).
      * @param listener    The listener to notify when the purchase process finishes
      * @param extraData   Extra data (developer payload), which will be returned with the purchase
      *                    data when the purchase completes. This extra data will be permanently bound to that
@@ -500,7 +500,7 @@ public class IabHelper {
     /**
      * Handles an activity result that's part of the purchase flow in in-app billing. If you
      * are calling {@link #launchPurchaseFlow}, then you must call this method from your
-     * Activity's {@link android.app.Activity@onActivityResult} method. This method
+     * Activity's {@link Activity@onActivityResult} method. This method
      * MUST be called from the UI thread of the Activity.
      *
      * @param requestCode The requestCode as you received it.
@@ -1033,9 +1033,11 @@ public class IabHelper {
     }
 
     /**
-     * To unlock the achievement
+     * To Unlock the achievement
      *
-     * @param packageName
+     * @param packageName   string value of the game's package name
+     * @param achievementId string value of the achievement's id, you have to find it from the developer's panel
+     * @return nothing really special
      */
     public String unlockUserAchievement(String packageName, String achievementId) {
         logDebug("unlockUserAchievement: " + packageName + " achievementId : " + achievementId);
@@ -1053,6 +1055,10 @@ public class IabHelper {
      * to Increment achievement which must be an incremental by the given number steps,
      * Notice: Once an achievement reaches at least the maximum number of steps,
      * it will be unlocked automatically and then any further increments will be ignored.
+     *
+     * @param packageName   string value of the game's package name
+     * @param achievementId string value of the achievement's id, you have to find it from the developer's panel
+     * @param numSteps      int value of the achievement that you wanted to increment at this step
      */
     public void incrementAchievement(String packageName, String achievementId, int numSteps) {
         logDebug("incrementAchievement: " + packageName + " achievementID : " + achievementId + " numSteps: " + numSteps);
@@ -1068,9 +1074,9 @@ public class IabHelper {
     /**
      * To submit the score corresponded to the scoreId by the given scoreValue.
      *
-     * @param packageName
-     * @param scoreId
-     * @param scoreValue
+     * @param packageName string value of the game's package name
+     * @param scoreId     string value of the score's id, you have to find it from the developer's panel
+     * @param scoreValue  int value of the score that you wanted to users scored according to the scenarios/game play.
      */
     public void submitScore(String packageName, String scoreId, int scoreValue) {
         logDebug("submitScore() called with: packageName = [" + packageName + "], scoreId = [" + scoreId + "], scoreValue = [" + scoreValue + "]");
@@ -1086,12 +1092,13 @@ public class IabHelper {
      * To Expose users states and orders by their scores
      * Notice: each time this function will be Games' LeaderBoard pops-up as an activity inside of your application/game
      *
-     * @param packageName String value of the game's packageName, it must be as same as you've registered in BaziNama developer panel.
+     * @param packageName String value of the game's packageName, it must be as same as you've registered in developer's panel.
      * @param scoreId     String value of score's id, you can find it in developer's panel
-     * @param scope       there are three scopes value (Time Scales) "MONTHLY", "WEEKLY", "DAILY" , "ALL"
+     * @param scope       there are three scopes value (Time Scales) "ALL", "MONTHLY", "WEEKLY", "DAILY"
      */
     public void openLeaderBoard(String packageName, String scoreId, String scope) {
-        logDebug("openLeaderBoard() called with: packageName = [" + packageName + "], scoreId = [" + scoreId + "], scope = [" + scope + "]");
+        logDebug("openLeaderBoard() called with: packageName = ["
+                + packageName + "], scoreId = [" + scoreId + "], scope = [" + scope + "]");
         try {
             mService.openLeaderBoard(packageName, scoreId, scope);
         } catch (Exception e) {

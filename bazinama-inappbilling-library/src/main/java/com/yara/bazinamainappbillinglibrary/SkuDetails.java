@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.example.android.trivialdrivesample.util;
+package com.yara.bazinamainappbillinglibrary;
 
 import org.json.JSONException;
 import org.json.JSONObject;

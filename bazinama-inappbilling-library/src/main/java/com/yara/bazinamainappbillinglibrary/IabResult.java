@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.example.android.trivialdrivesample.util;
+package com.yara.bazinamainappbillinglibrary;
 
 /**
  * Represents the result of an in-app billing operation.
