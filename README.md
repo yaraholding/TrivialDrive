@@ -1,4 +1,4 @@
-Bazinama Trivial Drive
+BaziNama Trivial Drive
 ============
 
 Sample for In-App Billing version 3
@@ -123,7 +123,7 @@ submitting a pull request through GitHub.
 
 License
 -------
-Copyright 2012 yara mobile, Inc.
+Copyright 2012 Yara Mobile, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one or more contributor
 license agreements.  See the NOTICE file distributed with this work for
@@ -142,7 +142,8 @@ the License.
 
 CHANGELOG
 ---------
-
+   - 2017-12-05: JAR module set apart from rest of project in case some developers need it as independent module
+   - 2017-11-12: Achievement and Leader-Board api obtained   
    - 2015-08-27: Ported to gradle and prepped for transitioning to GitHub
    - 2015-03-13: Updated to new dev console and added yearly subscriptions
    - 2013-01-08: Updated to include support for subscriptions
