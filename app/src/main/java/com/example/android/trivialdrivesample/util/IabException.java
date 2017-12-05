@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.yara.bazinamainappbillinglibrary;
+package com.example.android.trivialdrivesample.util;
 
 /**
  * Exception thrown when something went wrong with in-app billing.

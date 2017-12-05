@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.yara.bazinamainappbillinglibrary;
+package com.example.android.trivialdrivesample.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;

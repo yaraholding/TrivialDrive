@@ -33,11 +33,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.yara.bazinamainappbillinglibrary.IabBroadcastReceiver;
-import com.yara.bazinamainappbillinglibrary.IabHelper;
-import com.yara.bazinamainappbillinglibrary.IabResult;
-import com.yara.bazinamainappbillinglibrary.Inventory;
-import com.yara.bazinamainappbillinglibrary.Purchase;
+import com.example.android.trivialdrivesample.util.IabBroadcastReceiver;
+import com.example.android.trivialdrivesample.util.IabHelper;
+import com.example.android.trivialdrivesample.util.IabResult;
+import com.example.android.trivialdrivesample.util.Inventory;
+import com.example.android.trivialdrivesample.util.Purchase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -295,7 +295,6 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
          * want to make it easy for an attacker to replace the public key with one
          * of their own and then fake messages from the server.
          */
-//      String base64EncodedPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDV5ywDhukqgW5hUyjA1Y91A/xWii8Dn1pxOYK2qB8lOfjiFP3wjysEqoN9atXO8zzYrWtb/+YurKb+K0M7fUa00m72dB8+lESMUiSAHHMMFAiT35KuAixIusQzeFKL+qvcVZzagMb2JXLOX/mCsvwp9ccRcmSAikkKZQlmgRIv/wIDAQAB";
         String base64EncodedPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDTcEfJMZzM8+LZ9biA72XBVBA4TQziLx8HWUX1tukXOTq/iqEr3MSC6C68y23fR2efwmkovsg8T8DSCLacByusp2RsmFzuiW/Z7ghPxYr27+LZURRKqpes8zReq+b0A9a7ItifGaAuBKudB7886JqDe1k0H8OZuQJSNSBGNz36jwIDAQAB";
 
         // Some sanity checks to see if the developer (that's you!) really followed the
