@@ -478,9 +478,7 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
     public void onGetUserAchievementsClicked(View view) {
         Log.d(TAG, "onGetUserAchievementsClicked !!!");
         try {
-            final String userAchievements = mHelper.getUserAchievements(
-                    view.getContext().getPackageName() // Set The Game's package name
-            );
+            final String userAchievements = mHelper.getUserAchievements(view.getContext().getPackageName());
             Log.d(TAG, "<-| userAchievements : " + userAchievements + " |->");
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -498,10 +496,7 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
     public void onUnlockUserAchievementsClicked(View view) {
         Log.d(TAG, "onUnlockUserAchievementsClicked : " + view);
         try {
-            final String userAchievement = mHelper.unlockUserAchievement(
-                    view.getContext().getPackageName(),// Set The Game's package name
-                    "YOU_HAVE_TO_CATCH_IT_FROM_DEV_PANEL" // catch it from the developer panel when you defined the achievement
-            );
+            final String userAchievement = mHelper.unlockUserAchievement(view.getContext().getPackageName(), "1");
             Log.d(TAG, "onUnlockUserAchievementsClicked userAchievement: " + userAchievement);
         } catch (Exception e) {
             e.printStackTrace();
@@ -513,16 +508,18 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
      */
     public void onIncrementUserAchievementsClicked(View view) {
         Log.d(TAG, "onIncrementAchievement  called via : " + view);
+
         mHelper.incrementAchievement(
                 view.getContext().getPackageName(), // Set the Game's package name
                 "2", // Catch it from the developer panel when you defined the achievement
-                10 // You have to make an appropriate value for your achievement according to the game scenario
+                10 // You have to make an appropriate value for your achievement according to the game scenario (game-play)
         );
+
     }
 
     /**
      * When user get a hit of score and you wanted to submit the score for the
-     * Bazinam SDK, Please notice that this score will be involved in leader board calculations,
+     * BaziNama SDK, Please notice that this score will be involved in leader board calculations,
      * it means that each user in each game will be ordered by their scores that already have submitted
      * while they were struggling to achieve more and more.
      *
@@ -535,6 +532,7 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
                 "1", // Catch it from the developer panel when you defined the score
                 100 // You have to make an appropriate value for your score according to the game scenario
         );
+
     }
 
 
@@ -549,10 +547,13 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
      * @param view
      */
     public void onOpenUpLeaderBoardClicked(View view) {
+
         mHelper.openLeaderBoard(view.getContext().getPackageName(),
                 "1", // catch it from the developer panel when you defined the score
                 "ALL" // "ALL","MONTHLY","WEEKLY","DAILY"
         );
+
+
     }
 
     @Override
@@ -653,6 +654,10 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
     // When You wanted to open up rating and commenting page on BaziNama
     public void onRateUsClicked(View arg0) {
         Intent intent = new Intent(Intent.ACTION_EDIT);
+        /***
+         * WARNING: on a real application, we really recommend you use the package name (BuildConfig.APPLICATION_ID)
+         * as same as you've registered in BaziNama Developer Console
+         * */
         intent.setData(Uri.parse("bazinamaplus://details?id=" + BuildConfig.APPLICATION_ID));
         intent.setPackage("com.yaramobile.bazinamastore");
         startActivity(intent);
