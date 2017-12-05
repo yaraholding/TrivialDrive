@@ -21,6 +21,8 @@ The user can also purchase a subscription ("infinite gas") that allows them
 to drive without using up any gas while that subscription is active. The
 subscription can either be purchased monthly or yearly.
 
+In Order to implement the SDK as an independent JAR module take a look at [dev](https://github.com/YaraGithub/TrivialDrive/tree/dev) branch.
+
 Pre-requisites
 --------------
 

@@ -1,1 +1,1 @@
-include ':app', ':bazinama-inappbilling-library'
+include ':app'
