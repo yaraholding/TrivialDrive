@@ -34,12 +34,28 @@
         android:orientation="vertical"
         android:visibility="visible">
 
-        <ImageView
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:contentDescription="@string/content_description_title_image"
-            android:src="@drawable/title" />
+            android:layout_marginBottom="10dp">
+
+            <ImageView
+                android:id="@+id/logo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:contentDescription="@string/content_description_title_image"
+                android:src="@drawable/title" />
+
+            <ImageView
+                android:id="@+id/rate_us"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:contentDescription="Rate Us On BaziNama +"
+                android:onClick="onRateUsClicked"
+                android:src="@drawable/rate_us" />
+        </RelativeLayout>
 
         <ImageView
             android:id="@+id/free_or_premium"
@@ -164,9 +180,9 @@
                 android:id="@+id/open_up_leader_board_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginRight="20dp"
                 android:background="@android:color/transparent"
                 android:onClick="onOpenUpLeaderBoardClicked"
-                android:layout_marginRight="20dp"
                 android:src="@drawable/open_up_leader_board" />
         </LinearLayout>
 

@@ -475,8 +475,10 @@ public class IabHelper {
             mRequestCode = requestCode;
             mPurchaseListener = listener;
             mPurchasingItemType = itemType;
-            act.startIntentSenderForResult(pendingIntent.getIntentSender(),
-                    requestCode, new Intent(),
+            act.startIntentSenderForResult(
+                    pendingIntent.getIntentSender(),
+                    requestCode,
+                    new Intent(),
                     Integer.valueOf(0),
                     Integer.valueOf(0),
                     Integer.valueOf(0));

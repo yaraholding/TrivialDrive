@@ -24,6 +24,7 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
@@ -648,9 +649,19 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
         return true;
     }
 
+
+    // When You wanted to open up rating and commenting page on BaziNama
+    public void onRateUsClicked(View arg0) {
+        Intent intent = new Intent(Intent.ACTION_EDIT);
+        intent.setData(Uri.parse("bazinamaplus://details?id=" + BuildConfig.APPLICATION_ID));
+        intent.setPackage("com.yaramobile.bazinamastore");
+        startActivity(intent);
+    }
+
     // Drive button clicked. Burn gas!
     public void onDriveButtonClicked(View arg0) {
         Log.d(TAG, "Drive button clicked.");
+
         if (!mSubscribedToInfiniteGas && mTank <= 0)
             alert("Oh, no! You are out of gas! Try buying some!");
         else {
@@ -660,6 +671,7 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
             updateUi();
             Log.d(TAG, "Vrooom. Tank is now " + mTank);
         }
+
     }
 
     // We're being destroyed. It's important to dispose of the helper here!

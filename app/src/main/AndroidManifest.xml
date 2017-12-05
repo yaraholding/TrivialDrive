@@ -17,7 +17,6 @@
     package="com.example.android.trivialdrivesample">
 
     <!-- VERY IMPORTANT! Don't forget this permission, or in-app billing won't work. -->
-
     <uses-permission android:name="com.yaramobile.bazinamastore.vending.BILLING" />
 
     <application
