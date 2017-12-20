@@ -212,8 +212,11 @@ public class IabHelper {
     /**
      * To get to know which achievements related and gained by user
      */
-    public String getUserAchievements(String packageName) throws RemoteException {
-        logDebug("Package Name : " + packageName);
+    public String getUserAchievements(String packageName) throws Exception {
+        logDebug("Package Name : " + packageName + " mSetupDone " + mSetupDone + " mService: " + mService + " mServiceConn : " + mServiceConn);
+        if (mService == null && !mSetupDone) {
+            throw new Exception("BaziNama Not Found ");
+        }
         return mService.getUserAchievements(packageName);
     }
 
@@ -303,15 +306,17 @@ public class IabHelper {
             }
         };
 
-        // change intent action name and package name with com.yaramobile.gamecenter
+        // change intent action name and package name with com.yaramobile.bazinamastore
         Intent serviceIntent = new Intent("com.yaramobile.bazinamastore.billing.InAppBillingService.BIND");
         serviceIntent.setPackage("com.yaramobile.bazinamastore");
-        List<ResolveInfo> intentServices = mContext.getPackageManager().queryIntentServices(serviceIntent, 0);
+        List<ResolveInfo> intentServices = mContext.getPackageManager()
+                .queryIntentServices(serviceIntent, 0);
+        Log.d("TAG", "startSetup: <<<< intentServices : " + intentServices + " >>>>");
         try {
             if (intentServices != null && !intentServices.isEmpty()) {
                 // service available to handle that Intent
                 mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
-            } else {
+            } else {// Show the prompt dialog for install BaziNama
                 // no service available to handle that Intent
                 if (listener != null) {
                     listener.onIabSetupFinished(
@@ -323,6 +328,7 @@ public class IabHelper {
             e.printStackTrace();
         }
     }
+
 
     /**
      * Dispose of object, releasing resources. It's very important to call this
@@ -365,6 +371,7 @@ public class IabHelper {
                 } catch (IabAsyncInProgressException e) {
                     // Should never be thrown, because we call dispose() only after checking that
                     // there's not already an async operation in progress.
+                    e.printStackTrace();
                 }
             }
         }
@@ -427,7 +434,7 @@ public class IabHelper {
      */
     public void launchPurchaseFlow(Activity act, String sku, String itemType, List<String> oldSkus,
                                    int requestCode, OnIabPurchaseFinishedListener listener, String extraData)
-            throws IabAsyncInProgressException {
+            throws IabAsyncInProgressException, IllegalStateException {
         checkNotDisposed();
         checkSetupDone("launchPurchaseFlow");
         flagStartAsync("launchPurchaseFlow");
@@ -774,7 +781,7 @@ public class IabHelper {
     // Checks that setup was done; if not, throws an exception.
     void checkSetupDone(String operation) {
         if (!mSetupDone) {
-            logError("Illegal state for operation (" + operation + "): IAB helper is not set up.");
+            logError("Illegal state for operation (" + operation + "): IAB helper is not set up properly.");
             throw new IllegalStateException("IAB helper is not set up. Can't perform operation: " + operation);
         }
     }
@@ -1079,14 +1086,13 @@ public class IabHelper {
      * @param scoreId     string value of the score's id, you have to find it from the developer's panel
      * @param scoreValue  int value of the score that you wanted to users scored according to the scenarios/game play.
      */
-    public void submitScore(String packageName, String scoreId, int scoreValue) {
+    public void submitScore(String packageName, String scoreId, int scoreValue) throws RemoteException {
         logDebug("submitScore() called with: packageName = [" + packageName + "], scoreId = [" + scoreId + "], scoreValue = [" + scoreValue + "]");
-        try {
-            final String submitScoreResult = mService.submitScore(packageName, scoreId, scoreValue);
-            logDebug("Submit the score result : " + submitScoreResult);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!mSetupDone && mServiceConn == null) {
+            throw new IllegalStateException("BaziNama Not Found !!!");
         }
+        final String submitScoreResult = mService.submitScore(packageName, scoreId, scoreValue);
+        logDebug("Submit the score result : " + submitScoreResult);
     }
 
     /**
@@ -1097,14 +1103,13 @@ public class IabHelper {
      * @param scoreId     String value of score's id, you can find it in developer's panel
      * @param scope       there are three scopes value (Time Scales) "ALL", "MONTHLY", "WEEKLY", "DAILY"
      */
-    public void openLeaderBoard(String packageName, String scoreId, String scope) {
+    public void openLeaderBoard(String packageName, String scoreId, String scope) throws IllegalStateException, RemoteException {
         logDebug("openLeaderBoard() called with: packageName = ["
                 + packageName + "], scoreId = [" + scoreId + "], scope = [" + scope + "]");
-        try {
-            mService.openLeaderBoard(packageName, scoreId, scope);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!mSetupDone && mServiceConn == null) {
+            throw new IllegalStateException("BaziNama Not Found !!!");
         }
+        mService.openLeaderBoard(packageName, scoreId, scope);
     }
 
     /**

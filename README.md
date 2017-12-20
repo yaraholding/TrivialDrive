@@ -144,7 +144,7 @@ the License.
 
 CHANGELOG
 ---------
-
+   - 2017-12-19: Show the download dialog in case the service was not found on device  
    - 2015-08-27: Ported to gradle and prepped for transitioning to GitHub
    - 2015-03-13: Updated to new dev console and added yearly subscriptions
    - 2013-01-08: Updated to include support for subscriptions
