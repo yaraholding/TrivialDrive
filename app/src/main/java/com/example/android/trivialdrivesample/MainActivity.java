@@ -19,6 +19,7 @@ package com.example.android.trivialdrivesample;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
+import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
@@ -26,7 +27,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
@@ -295,7 +295,6 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
          * want to make it easy for an attacker to replace the public key with one
          * of their own and then fake messages from the server.
          */
-//      String base64EncodedPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDV5ywDhukqgW5hUyjA1Y91A/xWii8Dn1pxOYK2qB8lOfjiFP3wjysEqoN9atXO8zzYrWtb/+YurKb+K0M7fUa00m72dB8+lESMUiSAHHMMFAiT35KuAixIusQzeFKL+qvcVZzagMb2JXLOX/mCsvwp9ccRcmSAikkKZQlmgRIv/wIDAQAB";
         String base64EncodedPublicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDTcEfJMZzM8+LZ9biA72XBVBA4TQziLx8HWUX1tukXOTq/iqEr3MSC6C68y23fR2efwmkovsg8T8DSCLacByusp2RsmFzuiW/Z7ghPxYr27+LZURRKqpes8zReq+b0A9a7ItifGaAuBKudB7886JqDe1k0H8OZuQJSNSBGNz36jwIDAQAB";
 
         // Some sanity checks to see if the developer (that's you!) really followed the
@@ -320,8 +319,11 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
         mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
             public void onIabSetupFinished(IabResult result) {
                 Log.d(TAG, "Setup finished.");
-
-                if (!result.isSuccess()) {
+                // Just in case we're not able to find the BaziNama Application on the device, so definitely we're gonna do that forcibly :|
+                if (result.getResponse() == IabHelper.BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE) {
+//                    showDownloadDialog();
+                    return;
+                } else if (!result.isSuccess()) {
                     // Oh noes, there was a problem.
                     complain("Problem setting up in-app billing: " + result);
                     return;
@@ -351,6 +353,27 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
             }
         });
 
+    }
+
+    /**
+     * To show a dialog with download button & the URL of the latest release of BaziNama application.
+     */
+    private void showDownloadDialog() {
+        new Builder(MainActivity.this)
+                .setTitle("بازینما")
+                .setMessage("برای استفاده از تمام امکانات این بازی و شرکت در کلوپ جوایز، باید اپلیکیشن بازی نما را دانلود و نصب نمایید.")
+                .setPositiveButton("دانلود",
+                        new OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                startActivity(
+                                        new Intent(Intent.ACTION_VIEW)
+                                                .setData(Uri.parse("http://plus.bazinama.com/bazinama.apk")));
+                            }
+                        })
+                .create()
+                .show()
+        ;
     }
 
     @Override
@@ -391,6 +414,10 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
         try {
             mHelper.launchPurchaseFlow(this, SKU_GAS, RC_REQUEST,
                     mPurchaseFinishedListener, payload);
+        } catch (IllegalStateException ex) {
+            ex.printStackTrace();
+            setWaitScreen(false);
+            return;
         } catch (IabHelper.IabAsyncInProgressException e) {
             complain("Error launching purchase flow. Another async operation in progress.");
             setWaitScreen(false);
@@ -415,6 +442,11 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
         try {
             mHelper.launchPurchaseFlow(this, SKU_PREMIUM, RC_REQUEST,
                     mPurchaseFinishedListener, payload);
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+//            showDownloadDialog();
+            setWaitScreen(false);
+            return;
         } catch (IabHelper.IabAsyncInProgressException e) {
             complain("Error launching purchase flow. Another async operation in progress.");
             setWaitScreen(false);
@@ -478,10 +510,10 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
     public void onGetUserAchievementsClicked(View view) {
         Log.d(TAG, "onGetUserAchievementsClicked !!!");
         try {
-            final String userAchievements = mHelper.getUserAchievements(view.getContext().getPackageName());
-            Log.d(TAG, "<-| userAchievements : " + userAchievements + " |->");
-        } catch (RemoteException e) {
+            mHelper.getUserAchievements(view.getContext().getPackageName());
+        } catch (Exception e) {
             e.printStackTrace();
+            showDownloadDialog();
         }
     }
 
@@ -508,12 +540,16 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
      */
     public void onIncrementUserAchievementsClicked(View view) {
         Log.d(TAG, "onIncrementAchievement  called via : " + view);
-
-        mHelper.incrementAchievement(
-                view.getContext().getPackageName(), // Set the Game's package name
-                "2", // Catch it from the developer panel when you defined the achievement
-                10 // You have to make an appropriate value for your achievement according to the game scenario (game-play)
-        );
+        try {
+            mHelper.incrementAchievement(
+                    view.getContext().getPackageName(), // Set the Game's package name
+                    "2", // Catch it from the developer panel when you defined the achievement
+                    1// You have to make an appropriate value for your achievement according to the game scenario (game-play)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            showDownloadDialog();
+        }
 
     }
 
@@ -527,11 +563,16 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
      */
     public void onSubmitScoreClicked(View view) {
         Log.d(TAG, "onSubmitScoreClicked() called with: view = [" + view + "]");
-        mHelper.submitScore(
-                view.getContext().getPackageName(), // Set The Game's package name
-                "1", // Catch it from the developer panel when you defined the score
-                100 // You have to make an appropriate value for your score according to the game scenario
-        );
+        try {
+            mHelper.submitScore(
+                    view.getContext().getPackageName(), // Set The Game's package name
+                    "1", // Catch it from the developer panel when you defined the score
+                    100 // You have to make an appropriate value for your score according to the game scenario
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            showDownloadDialog();
+        }
 
     }
 
@@ -547,11 +588,15 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
      * @param view
      */
     public void onOpenUpLeaderBoardClicked(View view) {
-
-        mHelper.openLeaderBoard(view.getContext().getPackageName(),
-                "1", // catch it from the developer panel when you defined the score
-                "ALL" // "ALL","MONTHLY","WEEKLY","DAILY"
-        );
+        try {
+            mHelper.openLeaderBoard(view.getContext().getPackageName(),
+                    "1", // catch it from the developer panel when you defined the score
+                    "ALL" // "ALL","MONTHLY","WEEKLY","DAILY"
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            showDownloadDialog();
+        }
 
 
     }
@@ -651,16 +696,27 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
     }
 
 
-    // When You wanted to open up rating and commenting page on BaziNama
+    /**
+     * When You wanted to open up rating and commenting page on BaziNama
+     *
+     * @param arg0
+     */
     public void onRateUsClicked(View arg0) {
-        Intent intent = new Intent(Intent.ACTION_EDIT);
         /***
          * WARNING: on a real application, we really recommend you use the package name (BuildConfig.APPLICATION_ID)
          * as same as you've registered in BaziNama Developer Console
          * */
-        intent.setData(Uri.parse("bazinamaplus://details?id=" + BuildConfig.APPLICATION_ID));
-        intent.setPackage("com.yaramobile.bazinamastore");
-        startActivity(intent);
+        try {
+            Intent intent = new Intent(Intent.ACTION_EDIT);
+            intent.setData(Uri.parse("bazinamaplus://game_comments?id=" + BuildConfig.APPLICATION_ID));
+            intent.setPackage("com.yaramobile.bazinamastore");
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            e.printStackTrace();
+            showDownloadDialog();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Drive button clicked. Burn gas!
@@ -684,16 +740,19 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
     public void onDestroy() {
         super.onDestroy();
 
-        // very important:
-        if (mBroadcastReceiver != null) {
-            unregisterReceiver(mBroadcastReceiver);
-        }
+        try {
+            // very important:
+            if (mBroadcastReceiver != null) {
+                unregisterReceiver(mBroadcastReceiver);
+            }
 
-        // very important:
-        Log.d(TAG, "Destroying helper.");
-        if (mHelper != null) {
-            mHelper.disposeWhenFinished();
-            mHelper = null;
+            // very important:
+            if (mHelper != null) {
+                mHelper.disposeWhenFinished();
+                mHelper = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

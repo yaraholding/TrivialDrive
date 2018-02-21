@@ -11,7 +11,7 @@ android {
         }*/
     }
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion "23.0.3"
 
     defaultConfig {
         applicationId "com.example.android.trivialdrivesample"
@@ -31,7 +31,7 @@ android {
 }
 
 dependencies {
-    compile project(':bazinama-inappbilling-library')
+    compile files('libs/BazinamaInAppbilling-v1.0-release.jar')
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.0.1'

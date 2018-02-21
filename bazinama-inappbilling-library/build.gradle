@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "27.0.0"
+    buildToolsVersion "27.0.3"
 
 
     defaultConfig {
@@ -10,7 +10,7 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-
+        setProperty("archivesBaseName", "BazinamaInAppbilling-v$versionName")
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
     }
@@ -23,19 +23,24 @@ android {
     }
 
 }
+
+
+
 task clearJar(type: Delete) {
-    delete 'build/libs/Bazinama-InAppbilling.jar'
+    delete 'build/intermediates/bundles/release/'
 }
 task makeJar(type: Copy) {
     from('build/intermediates/bundles/release/')
     into('build/outputs/')
     include('classes.jar')
-    rename ('classes.jar', 'Bazinama-InAppbilling.jar')
+    rename('classes.jar', "BazinamaInAppbilling-C.jar")
     into('release/') //you can change this directory where you want to copy your .jar
 }
 
-
-dependencies {
-
-
+task copyFullJar(type: Copy) {
+    from('build/intermediates/intermediate-jars/release')
+    into('build/outputs')
+    include('full.jar')
+    rename('full.jar','BazinamaInAppbilling-full.jar')
+    into('release')
 }
