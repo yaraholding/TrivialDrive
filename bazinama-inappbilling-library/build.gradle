@@ -24,13 +24,13 @@ android {
 
 }
 task clearJar(type: Delete) {
-    delete 'build/libs/Bazinama-Inappbilling-Library.jar'
+    delete 'build/libs/Bazinama-InAppbilling.jar'
 }
 task makeJar(type: Copy) {
     from('build/intermediates/bundles/release/')
     into('build/outputs/')
     include('classes.jar')
-    rename ('classes.jar', 'Bazinama-Inappbilling-Library.jar')
+    rename ('classes.jar', 'Bazinama-InAppbilling.jar')
     into('release/') //you can change this directory where you want to copy your .jar
 }
 
