@@ -321,7 +321,7 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
                 Log.d(TAG, "Setup finished.");
                 // Just in case we're not able to find the BaziNama Application on the device, so definitely we're gonna do that forcibly :|
                 if (result.getResponse() == IabHelper.BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE) {
-                    showDownloadDialog();
+//                    showDownloadDialog();
                     return;
                 } else if (!result.isSuccess()) {
                     // Oh noes, there was a problem.
@@ -417,7 +417,6 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
         } catch (IllegalStateException ex) {
             ex.printStackTrace();
             setWaitScreen(false);
-            showDownloadDialog();
             return;
         } catch (IabHelper.IabAsyncInProgressException e) {
             complain("Error launching purchase flow. Another async operation in progress.");
@@ -445,7 +444,7 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
                     mPurchaseFinishedListener, payload);
         } catch (IllegalStateException e) {
             e.printStackTrace();
-            showDownloadDialog();
+//            showDownloadDialog();
             setWaitScreen(false);
             return;
         } catch (IabHelper.IabAsyncInProgressException e) {
@@ -533,7 +532,6 @@ public class MainActivity extends Activity implements IabBroadcastReceiver.IabBr
             Log.d(TAG, "onUnlockUserAchievementsClicked userAchievement: " + userAchievement);
         } catch (Exception e) {
             e.printStackTrace();
-            showDownloadDialog();
         }
     }
 

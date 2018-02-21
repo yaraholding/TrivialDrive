@@ -1050,9 +1050,7 @@ public class IabHelper {
     public String unlockUserAchievement(String packageName, String achievementId) {
         logDebug("unlockUserAchievement: " + packageName + " achievementId : " + achievementId);
         try {
-            final String achievement = mService.unlockAchievement(packageName, achievementId);
-            logDebug("unlockUserAchievement : " + achievement);
-            return achievement;
+            return mService.unlockAchievement(packageName, achievementId);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -1071,8 +1069,7 @@ public class IabHelper {
     public void incrementAchievement(String packageName, String achievementId, int numSteps) {
         logDebug("incrementAchievement: " + packageName + " achievementID : " + achievementId + " numSteps: " + numSteps);
         try {
-            final String achievement = mService.incrementAchievement(packageName, achievementId, numSteps);
-            logDebug("incrementAchievement : " + achievement);
+            mService.incrementAchievement(packageName, achievementId, numSteps);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -1089,7 +1086,7 @@ public class IabHelper {
     public void submitScore(String packageName, String scoreId, int scoreValue) throws RemoteException {
         logDebug("submitScore() called with: packageName = [" + packageName + "], scoreId = [" + scoreId + "], scoreValue = [" + scoreValue + "]");
         if (!mSetupDone && mServiceConn == null) {
-            throw new IllegalStateException("BaziNama Not Found !!!");
+            throw new IllegalStateException("Baziaama Not Found !!!");
         }
         final String submitScoreResult = mService.submitScore(packageName, scoreId, scoreValue);
         logDebug("Submit the score result : " + submitScoreResult);
